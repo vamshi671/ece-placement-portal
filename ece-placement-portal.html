@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RVITM ECE &mdash; Placement Cell Portal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --substrate:#0f1a15;
+    --substrate-2:#132420;
+    --panel:#152722;
+    --solder:#dff3e8;
+    --paper:#f4f7f2;
+    --copper:#c9793f;
+    --copper-bright:#e89a5c;
+    --trace-green:#3bd688;
+    --trace-dim:#1f4a3a;
+    --ink:#0e1512;
+    --ink-soft:#5b6b62;
+    --warn:#e0a83e;
+    --danger:#d9614f;
+    --border:#24382f;
+    --radius:10px;
+    --shadow: 0 10px 40px -12px rgba(0,0,0,0.55);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--substrate);
+    color:var(--solder);
+    font-family:'IBM Plex Sans', sans-serif;
+    min-height:100vh;
+    position:relative;
+    overflow-x:hidden;
+  }
+  ::selection{background:var(--copper);color:var(--ink);}
+  a{color:inherit;}
+  .mono{font-family:'IBM Plex Mono', monospace;}
+  .display{font-family:'Space Grotesk', sans-serif;}
+
+  /* board texture background */
+  body::before{
+    content:"";
+    position:fixed; inset:0;
+    background-image:
+      radial-gradient(circle at 1px 1px, rgba(59,214,136,0.07) 1px, transparent 1px);
+    background-size: 26px 26px;
+    pointer-events:none;
+    z-index:0;
+  }
+  .screen{ position:relative; z-index:1; min-height:100vh; }
+  .hidden{ display:none !important; }
+
+  /* ---------- LOGIN SCREEN ---------- */
+  #loginScreen{
+    display:grid;
+    grid-template-columns: 1.1fr 1fr;
+    min-height:100vh;
+  }
+  .login-art{
+    background:linear-gradient(180deg, var(--substrate-2), var(--substrate));
+    border-right:1px solid var(--border);
+    padding:56px;
+    display:flex;
+    flex-direction:column;
+    justify-content:space-between;
+    position:relative;
+    overflow:hidden;
+  }
+  .login-art svg{ position:absolute; inset:0; width:100%; height:100%; opacity:0.9; }
+  .brand-eyebrow{
+    font-family:'IBM Plex Mono', monospace;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    font-size:12px;
+    color:var(--trace-green);
+    display:flex; align-items:center; gap:10px;
+    position:relative; z-index:2;
+  }
+  .brand-eyebrow::before{ content:""; width:8px; height:8px; border-radius:50%; background:var(--trace-green); box-shadow:0 0 12px var(--trace-green); }
+  .login-title{
+    position:relative; z-index:2;
+    font-size:clamp(32px,4vw,52px);
+    line-height:1.05;
+    font-weight:600;
+    margin:24px 0 0 0;
+    max-width:9ch;
+  }
+  .login-sub{
+    position:relative; z-index:2;
+    color:#9db3a8; font-size:15px; line-height:1.6; max-width:38ch; margin-top:18px;
+  }
+  .login-stats{
+    position:relative; z-index:2;
+    display:flex; gap:32px; margin-top:auto; padding-top:32px; border-top:1px solid var(--border);
+  }
+  .login-stats div b{ display:block; font-family:'Space Grotesk',sans-serif; font-size:26px; color:var(--copper-bright); }
+  .login-stats div span{ font-size:11px; color:#7d9186; text-transform:uppercase; letter-spacing:.08em; }
+
+  .login-form-wrap{
+    display:flex; align-items:center; justify-content:center; padding:40px;
+  }
+  .login-card{ width:100%; max-width:380px; }
+  .role-toggle{
+    display:flex; background:var(--panel); border:1px solid var(--border); border-radius:999px; padding:4px; margin-bottom:28px;
+  }
+  .role-toggle button{
+    flex:1; padding:9px 0; border:none; background:transparent; color:#8ea299; font-family:'IBM Plex Mono',monospace;
+    font-size:12px; letter-spacing:.06em; text-transform:uppercase; border-radius:999px; cursor:pointer; transition:.2s;
+  }
+  .role-toggle button.active{ background:var(--trace-green); color:#062117; font-weight:600; }
+  .field{ margin-bottom:16px; }
+  .field label{ display:block; font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:#7d9186; margin-bottom:7px; font-family:'IBM Plex Mono',monospace; }
+  .field input{
+    width:100%; padding:12px 14px; background:var(--substrate-2); border:1px solid var(--border); border-radius:8px;
+    color:var(--solder); font-size:14px; font-family:'IBM Plex Sans',sans-serif; outline:none; transition:.15s;
+  }
+  .field input:focus{ border-color:var(--trace-green); box-shadow:0 0 0 3px rgba(59,214,136,0.15); }
+  .btn{
+    width:100%; padding:13px; border:none; border-radius:8px; background:var(--copper); color:#1a0f08; font-weight:600;
+    font-size:14px; cursor:pointer; transition:.15s; font-family:'IBM Plex Sans',sans-serif;
+  }
+  .btn:hover{ background:var(--copper-bright); }
+  .btn:focus-visible, button:focus-visible, input:focus-visible{ outline:2px solid var(--trace-green); outline-offset:2px; }
+  .login-hint{ margin-top:14px; font-size:12px; color:#748a80; line-height:1.6; }
+  .login-error{ color:var(--danger); font-size:13px; margin-top:10px; min-height:16px; }
+
+  /* ---------- APP SHELL ---------- */
+  #appScreen{ display:none; }
+  #appScreen.active{ display:block; }
+  .topbar{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:18px 32px; border-bottom:1px solid var(--border); background:var(--substrate-2);
+    position:sticky; top:0; z-index:10;
+  }
+  .topbar-brand{ display:flex; align-items:center; gap:12px; }
+  .chip-dot{ width:9px;height:9px;border-radius:50%; background:var(--trace-green); box-shadow:0 0 10px var(--trace-green); }
+  .topbar-brand b{ font-family:'Space Grotesk',sans-serif; font-size:16px; letter-spacing:.02em; }
+  .topbar-brand span{ font-size:11px; color:#7d9186; font-family:'IBM Plex Mono',monospace; }
+  .topbar-right{ display:flex; align-items:center; gap:16px; }
+  .role-pill{ font-family:'IBM Plex Mono',monospace; font-size:11px; padding:6px 12px; border:1px solid var(--border); border-radius:999px; color:var(--copper-bright); text-transform:uppercase; letter-spacing:.06em; }
+  .logout-btn{ background:transparent; border:1px solid var(--border); color:#9db3a8; padding:8px 14px; border-radius:8px; font-size:13px; cursor:pointer; font-family:'IBM Plex Sans',sans-serif; }
+  .logout-btn:hover{ border-color:var(--danger); color:var(--danger); }
+
+  .main{ max-width:1180px; margin:0 auto; padding:36px 32px 80px; }
+
+  /* stat cards */
+  .stat-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:36px; }
+  .stat-card{ background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); padding:20px; position:relative; overflow:hidden; }
+  .stat-card::after{ content:""; position:absolute; left:0; bottom:0; height:2px; width:100%; background:linear-gradient(90deg,var(--trace-green),transparent); }
+  .stat-card .label{ font-family:'IBM Plex Mono',monospace; font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:#7d9186; }
+  .stat-card .value{ font-family:'Space Grotesk',sans-serif; font-size:30px; margin-top:8px; color:var(--paper); }
+  .stat-card .value small{ font-size:14px; color:#7d9186; font-family:'IBM Plex Sans',sans-serif; }
+
+  .section-head{ display:flex; align-items:baseline; justify-content:space-between; margin-bottom:16px; flex-wrap:wrap; gap:10px; }
+  .section-head h2{ font-family:'Space Grotesk',sans-serif; font-size:20px; margin:0; }
+  .section-head .eyebrow{ font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--trace-green); text-transform:uppercase; letter-spacing:.1em; }
+
+  .toolbar{ display:flex; gap:10px; margin-bottom:18px; flex-wrap:wrap; }
+  .toolbar input[type=text]{
+    flex:1; min-width:220px; padding:11px 14px; background:var(--panel); border:1px solid var(--border); border-radius:8px; color:var(--solder); font-size:14px;
+  }
+  .toolbar select{ padding:11px 14px; background:var(--panel); border:1px solid var(--border); border-radius:8px; color:var(--solder); font-size:13px; font-family:'IBM Plex Mono',monospace; }
+
+  table{ width:100%; border-collapse:collapse; background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; }
+  thead th{
+    text-align:left; padding:12px 14px; font-family:'IBM Plex Mono',monospace; font-size:10.5px; text-transform:uppercase; letter-spacing:.07em;
+    color:#7d9186; border-bottom:1px solid var(--border); cursor:pointer; user-select:none; white-space:nowrap;
+  }
+  thead th:hover{ color:var(--trace-green); }
+  tbody td{ padding:12px 14px; border-bottom:1px solid var(--border); font-size:13.5px; white-space:nowrap; }
+  tbody tr:last-child td{ border-bottom:none; }
+  tbody tr{ cursor:pointer; transition:background .12s; }
+  tbody tr:hover{ background:var(--trace-dim); }
+  .badge{ font-family:'IBM Plex Mono',monospace; font-size:10.5px; padding:3px 9px; border-radius:999px; letter-spacing:.04em; }
+  .badge.ok{ background:rgba(59,214,136,0.15); color:var(--trace-green); }
+  .badge.warn{ background:rgba(224,168,62,0.15); color:var(--warn); }
+  .cgpa-tag{ font-family:'IBM Plex Mono',monospace; color:var(--copper-bright); font-weight:600; }
+
+  .table-scroll{ overflow-x:auto; border-radius:var(--radius); }
+
+  /* profile view */
+  #profileView{ display:none; }
+  #profileView.active{ display:block; }
+  .back-link{ display:inline-flex; align-items:center; gap:6px; color:var(--trace-green); font-family:'IBM Plex Mono',monospace; font-size:12px; background:none; border:none; cursor:pointer; padding:0; margin-bottom:22px; }
+  .profile-header{ display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:20px; margin-bottom:28px; }
+  .profile-header h1{ font-family:'Space Grotesk',sans-serif; font-size:30px; margin:0 0 6px; }
+  .profile-header .usn{ font-family:'IBM Plex Mono',monospace; color:var(--copper-bright); font-size:14px; }
+  .profile-grid{ display:grid; grid-template-columns:1.3fr 1fr; gap:20px; }
+  @media (max-width: 900px){ .profile-grid{ grid-template-columns:1fr; } .stat-grid{ grid-template-columns:repeat(2,1fr); } #loginScreen{ grid-template-columns:1fr; } .login-art{ display:none; } }
+  .card{ background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); padding:22px; }
+  .card h3{ margin:0 0 16px; font-family:'IBM Plex Mono',monospace; font-size:12px; text-transform:uppercase; letter-spacing:.08em; color:#7d9186; }
+  .kv{ display:flex; justify-content:space-between; padding:9px 0; border-bottom:1px dashed var(--border); font-size:13.5px; }
+  .kv:last-child{ border-bottom:none; }
+  .kv span:first-child{ color:#8ea299; }
+  .kv span:last-child{ font-family:'IBM Plex Mono',monospace; }
+  .scope-wrap{ background:#081410; border:1px solid var(--border); border-radius:8px; padding:16px; }
+  .scope-wrap svg{ width:100%; height:auto; display:block; }
+  .empty-state{ text-align:center; padding:60px 20px; color:#7d9186; }
+  .empty-state h3{ font-family:'Space Grotesk',sans-serif; color:var(--solder); margin-bottom:8px; }
+
+  footer.foot{ text-align:center; padding:28px; color:#5b6b62; font-size:12px; font-family:'IBM Plex Mono',monospace; border-top:1px solid var(--border); }
+
+  @media (prefers-reduced-motion: reduce){ *{ animation:none !important; transition:none !important; } }
+</style>
+</head>
+<body>
+
+<div class="screen">
+
+  <!-- LOGIN SCREEN -->
+  <div id="loginScreen">
+    <div class="login-art">
+      <svg viewBox="0 0 500 600" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+        <defs>
+          <linearGradient id="tg" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#3bd688" stop-opacity="0.55"/>
+            <stop offset="100%" stop-color="#3bd688" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <g stroke="#1f4a3a" stroke-width="2" fill="none">
+          <path d="M0 80 H120 V180 H260"/>
+          <path d="M0 240 H90 V320 H200 V400"/>
+          <path d="M500 60 H380 V160 H300"/>
+          <path d="M500 260 H420 V360 H320 V440"/>
+          <path d="M0 480 H140 V560"/>
+          <path d="M500 500 H360 V580"/>
+        </g>
+        <g stroke="#3bd688" stroke-width="2.5" fill="none" opacity="0.8">
+          <path d="M120 180 H260 V240" />
+          <path d="M300 160 H220 V240"/>
+        </g>
+        <g fill="#3bd688">
+          <circle cx="120" cy="180" r="4"/>
+          <circle cx="260" cy="240" r="4"/>
+          <circle cx="300" cy="160" r="4"/>
+          <circle cx="90" cy="320" r="4"/>
+        </g>
+        <circle cx="260" cy="240" r="90" fill="url(#tg)"/>
+      </svg>
+      <div class="brand-eyebrow">RVITM &middot; ECE Dept</div>
+      <h1 class="login-title display">Placement Cell Portal</h1>
+      <p class="login-sub">Academic eligibility records and placement readiness data for the ECE 2023 graduating batch. Restricted access &mdash; students and placement committee only.</p>
+      <div class="login-stats">
+        <div><b class="mono" id="statCount1">&mdash;</b><span>Students tracked</span></div>
+        <div><b class="mono" id="statCount2">&mdash;</b><span>Avg. CGPA</span></div>
+        <div><b class="mono" id="statCount3">&mdash;</b><span>Zero backlog</span></div>
+      </div>
+    </div>
+
+    <div class="login-form-wrap">
+      <div class="login-card">
+        <div class="brand-eyebrow" style="margin-bottom:22px;">Sign in</div>
+        <div class="role-toggle">
+          <button type="button" class="active" data-role="student">Student</button>
+          <button type="button" data-role="admin">Placement Cell</button>
+        </div>
+
+        <div id="studentLoginFields">
+          <div class="field">
+            <label for="stuUsn">USN</label>
+            <input type="text" id="stuUsn" class="mono" placeholder="1RF23EC0XX" autocomplete="off">
+          </div>
+        </div>
+
+        <div id="adminLoginFields" class="hidden">
+          <div class="field">
+            <label for="adminPass">Access code</label>
+            <input type="password" id="adminPass" placeholder="Enter access code" autocomplete="off">
+          </div>
+        </div>
+
+        <button class="btn" id="loginBtn">Enter portal</button>
+        <div class="login-error" id="loginError"></div>
+       
+      </div>
+    </div>
+  </div>
+
+  <!-- APP SCREEN -->
+  <div id="appScreen">
+    <div class="topbar">
+      <div class="topbar-brand">
+        <span class="chip-dot"></span>
+        <div>
+          <b class="display">ECE Placement Portal</b><br>
+          <span>RVITM &middot; 2023 Batch</span>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <span class="role-pill mono" id="roleLabel">STUDENT</span>
+        <button class="logout-btn" id="logoutBtn">Sign out</button>
+      </div>
+    </div>
+
+    <div class="main">
+
+      <!-- ADMIN DASHBOARD -->
+      <div id="adminDash">
+        <div class="stat-grid">
+          <div class="stat-card"><div class="label">Total students</div><div class="value" id="dTotal">0</div></div>
+          <div class="stat-card"><div class="label">Average CGPA</div><div class="value" id="dAvgCgpa">0</div></div>
+          <div class="stat-card"><div class="label">Active backlogs</div><div class="value" id="dBacklogs">0</div></div>
+          <div class="stat-card"><div class="label">Top CGPA</div><div class="value" id="dTopCgpa">0</div></div>
+        </div>
+
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Directory</div>
+            <h2>Student records</h2>
+          </div>
+        </div>
+        <div class="toolbar">
+          <input type="text" id="searchInput" placeholder="Search by name or USN&hellip;">
+          <select id="filterBacklog">
+            <option value="all">All students</option>
+            <option value="ok">No backlog</option>
+            <option value="warn">Active backlog</option>
+          </select>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th data-sort="name">Name</th>
+                <th data-sort="usn">USN</th>
+                <th data-sort="cgpa">CGPA</th>
+                <th data-sort="tenth_pct">10th %</th>
+                <th data-sort="twelfth_pct">12th %</th>
+                <th data-sort="active_backlogs">Backlog</th>
+                <th data-sort="mobile">Mobile</th>
+                <th data-sort="personal_email">Personal email</th>
+                <th data-sort="college_email">College email</th>
+              </tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- PROFILE VIEW (student self view + admin drill-down) -->
+      <div id="profileView"></div>
+
+    </div>
+
+    <footer class="foot">RVITM ECE Placement Cell &middot; internal eligibility records &middot; static demo build</footer>
+  </div>
+
+</div>
+
+<script>
+const STUDENTS = [{"name": "Jaseem Mohammed", "usn": "1RF21EC023", "program": "ECE", "mobile": null, "personal_email": null, "college_email": null, "tenth_pct": null, "twelfth_pct": null, "sem1": null, "sem2": null, "sem3": null, "sem4": null, "sem5": null, "sem6": null, "backlog_current": "NO", "active_backlogs": 0, "cgpa": null}, {"name": "Naveen Ranjan", "usn": "1RF22EC024", "program": "ECE", "mobile": null, "personal_email": null, "college_email": null, "tenth_pct": null, "twelfth_pct": null, "sem1": null, "sem2": null, "sem3": null, "sem4": null, "sem5": null, "sem6": null, "backlog_current": "NO", "active_backlogs": 0, "cgpa": null}, {"name": "Aadyot Nandan S", "usn": "1RF23EC001", "program": "ECE", "mobile": "9606673183", "personal_email": "aadyotnandan@gmail.com", "college_email": "rvit23bec020.rvitm@rvei.edu.in", "tenth_pct": 95.0, "twelfth_pct": 84.4, "sem1": 8.65, "sem2": 8.75, "sem3": 8.85, "sem4": 8.75, "sem5": 8.27, "sem6": 8.44, "backlog_current": "NO", "active_backlogs": 0, "cgpa": 8.62}, {"name": "Adithi Sreenivas ", "usn": "1RF23EC003", "program": "ECE", "mobile": "9663065204", "personal_email": "adithis1204@gmail.com", "college_email": "rvit23bec084.rvitm@rvei.edu.in", "tenth_pct": 92.2, "twelfth_pct": 91.83, "sem1": 8.9, "sem2": 9.15, "sem3": 8.4, "sem4": 8.55, "sem5": 9.36, "sem6": 9.22, "backlog_current": "NO", "active_backlogs": 0, "cgpa": 8.93}, {"name": "Aditya Jaiswal", "usn": "1RF23EC004", "program": "ECE", "mobile": "8960331322", "personal_email": "aditya.jaiswal5432@gmail.com", "college_email": "rvit23bec019.rvitm@rvei.edu.in", "tenth_pct": 94.8, "twelfth_pct": 86.6, "sem1": 8.7, "sem2": 8.5, "sem3": 8.6, "sem4": 8.2, "sem5": 8.23, "sem6": 8.38, "backlog_current": "NO", "active_backlogs": 0, "cgpa": 8.45}, {"name": "Aditya Singh ", "usn": "1RF23EC005", "program": "ECE", "mobile": "9686189895", "personal_email": "youraditya.17@gmail.com", "college_email": "rvit23bec094.rvitm@rvei.edu.in", "tenth_pct": 90.6, "twelfth_pct": 74.0, "sem1": 7.85, "sem2": 8.85, "sem3": 7.6, "sem4": 8.3, "sem5": 8.0, "sem6": 7.72, "backlog_current": "NO", "active_backlogs": 0, "cgpa": 8.06}, {"name": "Ahmed Ali Khan", "usn": "1RF23EC006", "program": "ECE", "mobile": "9508714375", "personal_email": "khanahmed2304@gmail.com", "college_email": "rvit23bec075.rvitm@rvei.edu.in", "tenth_pct": 86.2, "twelfth_pct": 76.4, "sem1": 7.05, "sem2": 8.15, "sem3": 6.85, "sem4": 7.3, "sem5": 6.68, "sem6": 7.33, "backlog_current": "YES", "active_backlogs": 1, "cgpa": 7.22}, {"name": "AKASH", "usn": "1RF23EC007", "program": "ECE", "mobile": null, "personal_email": null, "college_email": null, "tenth_pct": null, "twelfth_pct": null, "sem1": null, "sem2": null, "sem3": null, "sem4": null, "sem5": null, "sem6": null, "backlog_current": "NO", "active_backlogs": 0, "cgpa": null}, {"name": "AKASH AMBANNA PADANUR", "usn": "1RF23EC008", "program": "ECE", "mobile": null, "personal_email": null, "college_email": null, "tenth_pct": null, "twelfth_pct": null, "sem1": null, "sem2": null, "sem3": null, "sem4": null, "sem5": null, "sem6": null, "backlog_current": "NO", "active_backlogs": 0, "cgpa": null}, {"name": "AMRUTHA S", "usn": "1RF23EC009", "program": "ECE", "mobile": "9611455885", "personal_email": "amruthashivakumar16@gmail.com", "college_email": "rvit23bec074.rvitm@rvei.edu.in", "tenth_pct": 84.5, "twelfth_pct": 79.6, "sem1": 6.4, "sem2": 6.8, "sem3": 7.0, "sem4": 7.06, "sem5": 7.05, "sem6": 7.33, "backlog_current": "NO", "active_backlogs": 0, "cgpa": 6.94}, {"name": "Aneesh P Bhagvat", "usn": "1RF23EC010", "program": "ECE", "mobile": "7338124650", "personal_email": "aneeshbhagvat@gmail.com", "college_email": "rvit23bec030.rvitm@rvei.edu.in", "tenth_pct": 88.8, "twelfth_pct": 88.4, "sem1": 7.3, "sem2": 8.25, "sem3": 7.85, "sem4": 7.45, "sem5": 8.32, "sem6": 8.5, "backlog_current": "NO", "active_backlogs": 0, "cgpa": 7.95}, {"name": "ANISH MANAGOND", "usn": "1RF23EC011", "program": "ECE", "mobile": null, "personal_email": null, "college_email": null, "tenth_pct": null, "twelfth_pct": null, "sem1": null, "sem2": null, "sem3": null, "sem4": null, "sem5": null, "sem6": null, "backlog_current": "NO", "active_backlogs": 0, "cgpa": null}, {"name": "ANKITH R", "usn": "1RF23EC012", "program": "ECE", "mobile": null, "personal_email": null, "college_email": null, "tenth_pct": null, "twelfth_pct": null, "sem1": null, "sem2": null, "sem3": null, "sem4": null, "sem5": null, "sem6": null, "backlog_current": "NO", "active_backlogs": 0, "cgpa": null}, {"name": "ANSHUL K ATHREYA", "usn": "1RF23EC013", "program": "ECE", "mobile": null, "personal_email": null, "college_email": null, "tenth_pct": null, "twelfth_pct": null, "sem1": null, "sem2": null, "sem3": null, "sem4": null, "sem5": null, "sem6": null, "backlog_current": "NO", "active_backlogs": 0, "cgpa": null}, {"name": "ANURAG SINHA", "usn": "1RF23EC014", "program": "ECE", "mobile": "8210931299", "personal_email": "anuragsinha890@gmail.com", "college_email": "rvit23bec102.rvitm@rvei.edu.in", "tenth_pct": null, "twelfth_pct": 80.0, "sem1": 6.75, "sem2": 7.4, "sem3": 6.6, "sem4": 7.15, "sem5": 7.23, "sem6": 8.78, "backlog_current": "NO", "active_backlogs": 0, "cgpa": 7.31}, {"name": "Anushka M", "usn": "1RF23EC015", "program": "ECE", "mobile": "7795182951", "personal_email": "anushhshhka@gmail.com", "college_email": "rvit23bec086.rvitm@rvei.edu.in", "tenth_pct": 91.4, "twelfth_pct": 93.67, "sem1": 7.9, "sem2": 8.5, "sem3": 6.45, "sem4": 6.85, "sem5": 7.32, "sem6": 7.67, "backlog_current": "NO", "active_backlogs": 0, "cgpa": 7.45}, {"name": "AYUSH KUMAR", "usn": "1RF23EC016", "program": "ECE", "mobile": "7091309309", "personal_email": "justinrawaat@gmail.com", "college_email": "rvit23bec077.rvitm@rvei.edu.in", "tenth_pct": 83.0, "twelfth_pct": 80.0, "sem1": 7.75, "sem2": 8.75, "sem3": 7.25, "sem4": 7.95, "sem5": 8.14, "sem6": 8.33, "backlog_current": "NO", "active_backlogs": 0, "cgpa": 8.02}, {"name": "Sathvik Reddy", "usn": "1RF23EC017", "program": "ECE", "mobile": "9030881100", "personal_email": "bvsathvikreddy@gmail.com", "college_email": "rvit23bec029.rvitm@rvei.edu.in", "tenth_pct": 85.6, "twelfth_pct": 76.6, "sem1": 7.75, "sem2": 7.75, "sem3": 6.35, "sem4": 6.55, "sem5": 8.45, "sem6": 8.44, "backlog_current": "NO", "active_backlogs": 0, "cgpa": 7.55}, {"name": "BALAJI P GARLPET ", "usn": "1RF23EC018 ", "program": "ECE", "mobile": "9113817132", "personal_email": "balupg2005@gmail.com", "college_email": "rvit23bec085.rvitm@rvei.edu.in", "tenth_pct": 80.0, "twelfth_pct": 91.83, "sem1": 7.7, "sem2": 7.75, "sem3": 7.95, "sem4": 7.8, "sem5": 8.18, "sem6": 8.39, "backlog_current": "NO", "active_backlogs": 0, "cgpa": 7.93}, {"name": "Barsha V", "usn": "1RF23EC019", "program": "ECE", "mobile": null, "personal_email": null, "college_email": null, "tenth_pct": null, "twelfth_pct": null, "sem1": null, "sem2": null, "sem3": null, "sem4": null, "sem5": null, "sem6": null, "backlog_current": "NO", "active_backlogs": 0, "cgpa": null}, {"name": "BASAVARAJ IDARAMANI ", "usn": "1RF23EC020", "program": "ECE", "mobile": "7975781978", "personal_email": "basavraj1018@gmail.com", "college_email": "rvit23bec076.rvitm@rvei.edu.in", "tenth_pct": 77.76, "twelfth_pct": 70.5, "sem1": 7.4, "sem2": 8.3, "sem3": 8.85, "sem4": 8.3, "sem5": 8.95, "sem6": 8.89, "backlog_current": "NO", "active_backlogs": 0, "cgpa": 8.44}, {"name": "BHAVANA B V", "usn": "1RF23EC021", "program": "ECE", "mobile": "7338539863", "personal_email": "bvbhavana52@gmail.com", "college_email": "rvit23bec006.rvitm@rvei.edu.in", "tenth_pct": 97.12, "twelfth_pct": 96.67, "sem1": 9.35, "sem2": 9.5, "sem3": 9.1, "sem4": 8.9, "sem5": 8.95, "sem6": 9.28, "backlog_current": "NO", "active_backlogs": 0, "cgpa": 9.17}, {"name": "CHAITHRA SHREE MS", "usn": "1RF23EC022", "program": "ECE", "mobile": "8073860785", "personal_email": "090chaithrashreems@gmail.com", "college_email": "rvit23bec033.rvitm@rvei.edu.in", "tenth_pct": 91.4, "twelfth_pct": 92.17, "sem1": 8.4, "sem2": 8.6, "sem3": 7.45, "sem4": 7.5, "sem5": 8.05, "sem6": 7.72, "backlog_current": "NO", "active_backlogs": 0, "cgpa": 7.96}, {"name": "CHUNDURU SIREESHA", "usn": "1RF23EC023", "program": "ECE", "mobile": "7416743464", "personal_email": "sireesha.7737@gmail.com", "college_email": "rvit23bec024..rvitm@rvei.edu.in", "tenth_pct": 100.0, "twelfth_pct": 97.1, "sem1": 9.0, "sem2": 9.45, "sem3": 8.25, "sem4": 8.35, "sem5": 8.0, "sem6": 7.89, "backlog_current": "NO", "active_backlogs": 0, "cgpa": 8.49}, {"name": "D GAURAV RAHTOR", "usn": "1RF23EC024", "program": "ECE", "mobile": "8105599924", "personal_email": "gauravrathor1896@gmail.com", "college_email": "rvit23bec088.rvitm@rvei.edu.in", "tenth_pct": 88.96, "twelfth_pct": 91.0, "sem1": 8.2, "sem2": 8.15, "sem3": 7.95, "sem4": 8.15, "sem5": 8.77, "sem6": 8.61, "backlog_current": "NO", "active_backlogs": 0, "cgpa": 8.31}, {"name": "Debarghya Chandra ", "usn": "1RF23EC025", "program": "ECE", "mobile": "8695485682", "personal_email": "debarghyachandra56@gmail.com", "college_email": "rvit23bec021.rvitm@rvei.edu.in", "tenth_pct": 89.0, "twelfth_pct": 83.0, "sem1": 6.85, "sem2": 7.25, "sem3": 6.2, "sem4": 5.9, "sem5": 6.45, "sem6": 7.06, "backlog_current": "YES", "active_backlogs": 1, "cgpa": 6.61}, {"name": "DIVYA.M", "usn": "1RF23EC026", "program": "ECE", "mobile": "9980754491", "personal_email": "divyamallikarjun2020@gmail.com", "college_email": "rvit23bec103.rvitm@rvei.edu.in", "tenth_pct": 84.48, "twelfth_pct": 91.82, "sem1": 8.2, "sem2": 8.6, "sem3": 7.9, "sem4": 8.25, "sem5": 8.36, "sem6": 8.72, "backlog_current": "NO", "active_backlogs": 0, "cgpa": 8.33}, {"name": "Ganashree R", "usn": "1RF23EC027", "program": "ECE", "mobile": null, "personal_email": null, "college_email": null, "tenth_pct": null, "twelfth_pct": null, "sem1": null, "sem2": null, "sem3": null, "sem4": null, "sem5": null, "sem6": null, "backlog_current": "NO", "active_backlogs": 0, "cgpa": null}, {"name": "Gouthami M S", "usn": "1RF23EC028", "program": "ECE", "mobile": "9353476470", "personal_email": "ms.gouthami.257@gmail.com", "college_email": "rvit23bec097.rvitm@rvei.edu.in", "tenth_pct": 98.56, "twelfth_pct": 94.6, "sem1": 7.75, "sem2": 8.29, "sem3": 7.95, "sem4": 7.7, "sem5": 7.82, "sem6": 8.44, "backlog_current": "NO", "active_backlogs": 0, "cgpa": 7.98}, {"name": "Gowri Y", "usn": "1RF23EC029", "program": "ECE", "mobile": "7019269609", "personal_email": "gouriyalangi@gmail.com ", "college_email": "rvit23bec002.rvitm@rvei.edu.in", "tenth_pct": null, "twelfth_pct": 80.0, "sem1": 7.05, "sem2": 7.55, "sem3": 7.5, "sem4": 7.35, "sem5": 7.91, "sem6": 8.44, "backlog_current": "NO", "active_backlogs": 0, "cgpa": 7.62}, {"name": "Harrsha R", "usn": "1RF23EC030", "program": "ECE", "mobile": "6366382579", "personal_email": "harshasharma2005@gmail.com", "college_email": "rvit23bec027.rvitm@rvei.edu.in", "tenth_pct": 78.0, "twelfth_pct": 70.33, "sem1": 5.7, "sem2": 3.15, "sem3": 4.7, "sem4": 5.1, "sem5": 5.45, "sem6": 4.39, "backlog_current": "YES", "active_backlogs": 2, "cgpa": 4.77}, {"name": "Harshith BA", "usn": "1RF23EC031", "program": "ECE", "mobile": "7338242731", "personal_email": "harshithba33@gmail.com", "college_email": "rvit23bec073.rvitm@rvei.edu.in", "tenth_pct": 98.0, "twelfth_pct": 83.83, "sem1": 5.5, "sem2": 6.48, "sem3": 6.35, "sem4": 6.25, "sem5": 6.55, "sem6": 7.39, "backlog_current": "YES", "active_backlogs": 1, "cgpa": 6.41}, {"name": "Harshitha B S", "usn": "1RF23EC032", "program": "ECE", "mobile": "8310087599", "personal_email": "harshithabs1759@gmail.com", "college_email": "rvit23bec099.rvitm@rvei.edu.in", "tenth_pct": 90.56, "twelfth_pct": 87.16, "sem1": 6.55, "sem2": 7.4, "sem3": 7.2, "sem4": 7.2, "sem5": 7.68, "sem6": 7.72, "backlog_current": "NO", "active_backlogs": 0, "cgpa": 7.29}, {"name": "Harshawardhan Sharma", "usn": "1RF23EC033", "program": "ECE", "mobile": null, "personal_email": null, "college_email": null, "tenth_pct": null, "twelfth_pct": null, "sem1": null, "sem2": null, "sem3": null, "sem4": null, "sem5": null, "sem6": null, "backlog_current": "NO", "active_backlogs": 0, "cgpa": null}, {"name": "HEMALATHA D ", "usn": "1RF23EC034", "program": "ECE", "mobile": "7975431861", "personal_email": "hemalatha8102004@gmail.com", "college_email": "rvit23bec009.rvitm@rvei.edu.in", "tenth_pct": 73.12, "twelfth_pct": 86.0, "sem1": 6.8, "sem2": 7.35, "sem3": 6.8, "sem4": 6.95, "sem5": 7.45, "sem6": 7.72, "backlog_current": "NO", "active_backlogs": 0, "cgpa": 7.17}, {"name": "J Chandana", "usn": "1RF23EC035", "program": "ECE", "mobile": "7975572738", "personal_email": "chandanajujare@gmail.com", "college_email": "rvit23bec072.rvitm@rvei.edu.in", "tenth_pct": 97.6, "twelfth_pct": 92.5, "sem1": 9.15, "sem2": 9.6, "sem3": 8.75, "sem4": 8.85, "sem5": 9.14, "sem6": 9.44, "backlog_current": "NO", "active_backlogs": 0, "cgpa": 9.15}, {"name": "Janke rishitha ", "usn": "1RF23EC036 ", "program": "ECE", "mobile": "74114 41459 ", "personal_email": "Jankerishitha@gmail.com", "college_email": "rvit23bec082.rvitm@rvei.edu.in", "tenth_pct": 63.8, "twelfth_pct": 65.2, "sem1": 6.05, "sem2": 5.75, "sem3": 5.9, "sem4": 6.75, "sem5": 7.09, "sem6": 4.39, "backlog_current": "NO", "active_backlogs": 0, "cgpa": 6.03}, {"name": "Jathin M", "usn": "1RF23EC037", "program": "ECE", "mobile": "7899038402", "personal_email": "jathinm458@gmail.com", "college_email": "rvit23bec098.rvitm@rvei.edu.in", "tenth_pct": 92.0, "twelfth_pct": 85.67, "sem1": 6.6, "sem2": 7.5, "sem3": 6.3, "sem4": 6.15, "sem5": 7.59, "sem6": 7.33, "backlog_current": "NO", "active_backlogs": 0, "cgpa": 6.92}, {"name": "Kausthubh ", "usn": "1RF23EC038", "program": "ECE", "mobile": "8197878811", "personal_email": "kausthubhvishu@gmail.com", "college_email": "rvit23bec005.rvitm@rvei.edu.in", "tenth_pct": null, "twelfth_pct": null, "sem1": 6.75, "sem2": 3.95, "sem3": 5.13, "sem4": 5.1, "sem5": 4.09, "sem6": 7.39, "backlog_current": "YES", "active_backlogs": 5, "cgpa": 5.35}, {"name": "Kshitij Pandey", "usn": "1RF23EC039 ", "program": "ECE", "mobile": "8296558686", "personal_email": "kshitij.h.pamdey@gmail.com", "college_email": "rvit23bec010.rvitm@rvei.edu.in", "tenth_pct": 96.83, "twelfth_pct": 89.0, "sem1": 7.9, "sem2": 8.04, "sem3": 7.0, "sem4": 7.5, "sem5": 7.45, "sem6": 7.33, "backlog_current": "YES", "active_backlogs": 1, "cgpa": 7.54}, {"name": "Kunda Sri Krishna Vamshi", "usn": "1RF23EC040", "program": "ECE", "mobile": "8639472846", "personal_email": "krishnavamshikunda16@gmail.com", "college_email": "rvit23bec015.rvitm@rvei.edu.in", "tenth_pct": 100.0, "twelfth_pct": 97.3, "sem1": 9.65, "sem2": 9.6, "sem3": 9.15, "sem4": 9.05, "sem5": 9.64, "sem6": 9.39, "backlog_current": "NO", "active_backlogs": 0, "cgpa": 9.42}, {"name": "Likitha G S ", "usn": "1RF23EC041 ", "program": "ECE", "mobile": "8431130742", "personal_email": "gslikitha472@gmail.com", "college_email": "rvit23bec091.rvitm@rvei.edu.in", "tenth_pct": 92.8, "twelfth_pct": 93.3, "sem1": 8.25, "sem2": 8.4, "sem3": 7.45, "sem4": 7.6, "sem5": 7.36, "sem6": 7.89, "backlog_current": "NO", "active_backlogs": 0, "cgpa": 7.82}, {"name": "M Lakshmi Lahari ", "usn": "1RF23EC042", "program": "ECE", "mobile": "7349520083", "personal_email": "lakshmilahari.2017@gmail.com", "college_email": "rvit23bec105.rvitm@rvei.edu.in", "tenth_pct": 80.8, "twelfth_pct": 78.83, "sem1": 7.35, "sem2": 7.05, "sem3": 6.95, "sem4": 7.05, "sem5": 6.95, "sem6": 7.94, "backlog_current": "NO", "active_backlogs": 0, "cgpa": 7.2}, {"name": "Medhya Parthakudi ", "usn": "1RF23EC043 ", "program": "ECE", "mobile": "9380600463", "personal_email": "parthakudimedhya@gmail.com ", "college_email": "rvit23bec028.rvitm@rvei.edu.in", "tenth_pct": 86.4, "twelfth_pct": 87.3, "sem1": 8.3, "sem2": 8.25, "sem3": 7.7, "sem4": 8.0, "sem5": 7.86, "sem6": 8.33, "backlog_current": "NO", "active_backlogs": 0, "cgpa": 8.07}, {"name": "MONICA SINGH S", "usn": "1RF23EC044", "program": "ECE", "mobile": "8618729911", "personal_email": "smonu.moni1234@gmail.com", "college_email": "rvit23bec078.rvitm@rvei.edu.in", "tenth_pct": 77.28, "twelfth_pct": 89.66, "sem1": 6.7, "sem2": 7.08, "sem3": 6.5, "sem4": 6.9, "sem5": 7.68, "sem6": 7.72, "backlog_current": "NO", "active_backlogs": 0, "cgpa": 7.1}, {"name": "MONISHA M REDDY", "usn": "1RF23EC045", "program": "ECE", "mobile": "8050003339", "personal_email": "monishamreddy33339@gmail.com", "college_email": "rvit23bec093.rvitm@rvei.edu.in", "tenth_pct": 95.6, "twelfth_pct": 91.2, "sem1": 9.4, "sem2": 9.15, "sem3": 8.6, "sem4": 8.8, "sem5": 9.14, "sem6": 9.39, "backlog_current": "NO", "active_backlogs": 0, "cgpa": 9.08}, {"name": "Monoddin K ", "usn": "1RF23EC046", "program": "ECE", "mobile": "8050144329", "personal_email": "monoddinmonu@gmail.com", "college_email": "rvit23bec008.rvitm@rvei.edu.in", "tenth_pct": 85.28, "twelfth_pct": 85.33, "sem1": 7.9, "sem2": 7.65, "sem3": 7.95, "sem4": 7.15, "sem5": 7.77, "sem6": 6.94, "backlog_current": "NO", "active_backlogs": 0, "cgpa": 7.57}, {"name": "Mukund Singh", "usn": "1RF23EC047", "program": "ECE", "mobile": "9113851346", "personal_email": "mukundsingh1308@gmail.com", "college_email": "rvit23bec034.rvitm@rvei.edu.in", "tenth_pct": 92.0, "twelfth_pct": 78.0, "sem1": 8.65, "sem2": 8.3, "sem3": 7.75, "sem4": 7.7, "sem5": 8.09, "sem6": 8.61, "backlog_current": "NO", "active_backlogs": 0, "cgpa": 8.17}, {"name": "Naman Shah", "usn": "1RF23EC048", "program": "ECE", "mobile": "9742051290", "personal_email": "namanshah1408@gmail.com", "college_email": "rvit23bec104.rvitm@rvei.edu.in", "tenth_pct": 68.0, "twelfth_pct": 77.0, "sem1": 6.95, "sem2": 6.4, "sem3": 5.5, "sem4": 6.45, "sem5": 6.95, "sem6": 6.95, "backlog_current": "YES", "active_backlogs": 2, "cgpa": 6.53}, {"name": "NAMRATHA V", "usn": "1RF23EC049", "program": "ECE", "mobile": "7760945420", "personal_email": "namrathachar08@gmail.com", "college_email": "rvit23bec023.rvitm@rvei.edu.in", "tenth_pct": 86.3, "twelfth_pct": 73.6, "sem1": 6.35, "sem2": 6.8, "sem3": 5.5, "sem4": 6.9, "sem5": 6.9, "sem6": 7.78, "backlog_current": "YES", "active_backlogs": 2, "cgpa": 6.8}, {"name": "NEHA SARAVANAN", "usn": "1RF23EC050", "program": "ECE", "mobile": "6366584680", "personal_email": "saravanan.neha3@gmail.com", "college_email": "rvit23bec003.rvitm@rvei.edu.in", "tenth_pct": 98.8, "twelfth_pct": 87.0, "sem1": 9.6, "sem2": 9.5, "sem3": 9.2, "sem4": 9.45, "sem5": 9.45, "sem6": 9.78, "backlog_current": "NO", "active_backlogs": 0, "cgpa": 9.49}, {"name": "Norin Roby Issac", "usn": "1RF23EC051", "program": "ECE", "mobile": "8095361854", "personal_email": "norinroby@gmail.com", "college_email": "rvit23bec087.rvitm@rvei.edu.in", "tenth_pct": 97.6, "twelfth_pct": 93.5, "sem1": 8.65, "sem2": 8.85, "sem3": 8.1, "sem4": 8.25, "sem5": 8.09, "sem6": 8.44, "backlog_current": "NO", "active_backlogs": 0, "cgpa": 8.39}, {"name": "Pramod Gouda P Patil ", "usn": "1RF23EC052", "program": "ECE", "mobile": "8296739043", "personal_email": "goudapramod229@gmail.com", "college_email": "rvit23bec092.rvitm@rvei.edu.in", "tenth_pct": 96.8, "twelfth_pct": 94.0, "sem1": 8.5, "sem2": 8.25, "sem3": 8.3, "sem4": 8.05, "sem5": 8.45, "sem6": 9.0, "backlog_current": "NO", "active_backlogs": 0, "cgpa": 8.42}, {"name": "PRANEETH N", "usn": "1RF23EC053", "program": "ECE", "mobile": "9591926671", "personal_email": "praneethngowda@gmail.com", "college_email": "rvit23bec090.rvitm@rvei.edu.in", "tenth_pct": 96.6, "twelfth_pct": 95.6, "sem1": 8.1, "sem2": 8.5, "sem3": 7.2, "sem4": 7.7, "sem5": 8.45, "sem6": 8.06, "backlog_current": "NO", "active_backlogs": 0, "cgpa": 8.03}, {"name": "PRIAANSH GUPTA", "usn": "1RF23EC054", "program": "ECE", "mobile": "9110625515", "personal_email": "priaanshgupta@gmail.com", "college_email": "rvit23bec036.rvitm@rvei.edu.in", "tenth_pct": 72.0, "twelfth_pct": 87.0, "sem1": 7.75, "sem2": 7.7, "sem3": 7.05, "sem4": 6.6, "sem5": 7.53, "sem6": 7.1, "backlog_current": "YES", "active_backlogs": 1, "cgpa": 7.3}, {"name": "RAJESH G.D.", "usn": "1RF23EC055", "program": "ECE", "mobile": "8147266719", "personal_email": "rajeshgiriyapura@gmail.com", "college_email": "rvit23bec007.rvitm@rvei.edu.in", "tenth_pct": 94.2, "twelfth_pct": 89.93, "sem1": 8.5, "sem2": 8.2, "sem3": 7.65, "sem4": 7.55, "sem5": 6.91, "sem6": 7.61, "backlog_current": "YES", "active_backlogs": 2, "cgpa": 7.73}, {"name": "Rishi R", "usn": "1RF23EC056", "program": "ECE", "mobile": "9741888913", "personal_email": "rishirocks242@gmail.com", "college_email": "rvit23bec031.rvitm@rvei.edu.in", "tenth_pct": 77.1, "twelfth_pct": 84.3, "sem1": 7.15, "sem2": 6.9, "sem3": 6.1, "sem4": 6.85, "sem5": 7.59, "sem6": 8.11, "backlog_current": "NO", "active_backlogs": 0, "cgpa": 7.11}, {"name": "Sharanya Varsha Nayak ", "usn": "1RF23EC057", "program": "ECE", "mobile": "7019998516", "personal_email": "sharanyav200@gmail.com", "college_email": "rvit23bec100.rvitm@rvei.edu.in", "tenth_pct": 87.8, "twelfth_pct": 89.0, "sem1": 7.05, "sem2": 8.1, "sem3": 5.95, "sem4": 7.04, "sem5": 7.16, "sem6": 8.5, "backlog_current": "NO", "active_backlogs": 0, "cgpa": 7.28}, {"name": "Shreya Nagendra", "usn": "1RF23EC058", "program": "ECE", "mobile": "6362903461", "personal_email": "Shreyan1509@gmail.com", "college_email": "rvit23bec012.rvitm@rvei.edu.in", "tenth_pct": 78.1, "twelfth_pct": 72.04, "sem1": 7.4, "sem2": 7.55, "sem3": 8.05, "sem4": 7.95, "sem5": 8.27, "sem6": 8.72, "backlog_current": "NO", "active_backlogs": 0, "cgpa": 8.02}, {"name": "Srujan TM ", "usn": "1RF23EC059 ", "program": "ECE", "mobile": "9148144705", "personal_email": "Srujantm059@gmail.com", "college_email": "rvit23bec032.rvitm@rvei.edu.in", "tenth_pct": 58.3, "twelfth_pct": 80.0, "sem1": 6.05, "sem2": 6.9, "sem3": 5.55, "sem4": 6.5, "sem5": 7.25, "sem6": 7.83, "backlog_current": "NO", "active_backlogs": 0, "cgpa": 6.67}, {"name": "Varun Jain", "usn": "1RF23EC061", "program": "ECE", "mobile": "9731118115", "personal_email": "varunjain1840@gmail.com", "college_email": "rvit23bec101.rvitm@rvei.edu.in", "tenth_pct": 91.0, "twelfth_pct": 93.34, "sem1": 8.55, "sem2": 8.85, "sem3": 8.7, "sem4": 8.86, "sem5": 8.64, "sem6": 8.67, "backlog_current": "NO", "active_backlogs": 0, "cgpa": 8.71}, {"name": "Vasishta RB", "usn": "1RF23EC062", "program": "ECE", "mobile": "9742322334", "personal_email": "vasishta.beedu@gmail.com", "college_email": "rvit23bec022.rvitm@rvei.edu.in", "tenth_pct": 90.83, "twelfth_pct": 82.5, "sem1": 8.45, "sem2": 8.85, "sem3": 7.8, "sem4": 8.3, "sem5": 8.14, "sem6": 8.61, "backlog_current": "NO", "active_backlogs": 0, "cgpa": 8.48}, {"name": "Yashupradha B S", "usn": "1RF23EC063", "program": "ECE", "mobile": "8296980427", "personal_email": "yashu.200504@gmail.com", "college_email": "rvit23bec089.rvitm@rvei.edu.in", "tenth_pct": 74.0, "twelfth_pct": 93.3, "sem1": 8.9, "sem2": 8.6, "sem3": 8.3, "sem4": 8.7, "sem5": 8.64, "sem6": 8.56, "backlog_current": "NO", "active_backlogs": 0, "cgpa": 8.68}, {"name": "CHIRANTHAN GOWDA S P", "usn": "1RF24EC400", "program": "ECE", "mobile": "6361958855", "personal_email": "chiranthangowdasp@gmail.com", "college_email": "rvit24bec400.rvitm@rvei.edu.in", "tenth_pct": 87.2, "twelfth_pct": 82.2, "sem1": null, "sem2": null, "sem3": 8.1, "sem4": 8.4, "sem5": 8.14, "sem6": 8.72, "backlog_current": "NO", "active_backlogs": 0, "cgpa": 8.32}, {"name": "Mohammed Affan ", "usn": "1RF24EC401", "program": "ECE", "mobile": "8088158487", "personal_email": "mohammed1affan@gmail.com", "college_email": "rvit24bec402.rvitm@rvei.edu.in", "tenth_pct": 84.96, "twelfth_pct": 78.1, "sem1": null, "sem2": null, "sem3": 7.4, "sem4": 7.2, "sem5": 5.95, "sem6": 7.06, "backlog_current": "NO", "active_backlogs": 0, "cgpa": 6.87}, {"name": "Pradeepkumar Naragund", "usn": "1RF24EC402", "program": "ECE", "mobile": "9353106440", "personal_email": "pradeepkumarnaragund3@gmail.com", "college_email": "rvit24bec401.rvitm@rvei.edu.in", "tenth_pct": 91.7, "twelfth_pct": 88.4, "sem1": null, "sem2": null, "sem3": 7.9, "sem4": 8.05, "sem5": 8.09, "sem6": 8.56, "backlog_current": "NO", "active_backlogs": 0, "cgpa": 8.05}, {"name": "Pughal p", "usn": "1RF24EC403", "program": "ECE", "mobile": "9019398705", "personal_email": "pughalprashanth@gmail.com", "college_email": "rvit24bec405.rvitm@rvei.edu.in", "tenth_pct": 53.12, "twelfth_pct": 68.7, "sem1": null, "sem2": null, "sem3": 6.05, "sem4": 6.4, "sem5": 5.91, "sem6": 8.0, "backlog_current": "NO", "active_backlogs": 0, "cgpa": 7.0}, {"name": "Varun Achar", "usn": "1RF24EC404", "program": "ECE", "mobile": "7406123553", "personal_email": "varunachar3112001@gmail.com", "college_email": "rvit24bec403.rvitm@rvei.edu.in", "tenth_pct": 65.0, "twelfth_pct": 88.0, "sem1": null, "sem2": null, "sem3": 4.65, "sem4": 5.96, "sem5": 7.86, "sem6": 8.61, "backlog_current": "YES", "active_backlogs": 1, "cgpa": 6.73}, {"name": "Veeresha M ", "usn": "1RF24EC405", "program": "ECE", "mobile": "8904267630", "personal_email": "veereshvanala@gmail.com", "college_email": "rvit24bec404.rvitm@rvei.edu.in", "tenth_pct": 53.12, "twelfth_pct": 53.0, "sem1": null, "sem2": null, "sem3": 5.4, "sem4": 6.1, "sem5": 5.95, "sem6": 7.22, "backlog_current": "YES", "active_backlogs": 1, "cgpa": 6.13}];
+
+const ADMIN_CODE = "ece-admin-2026";
+let currentRole = null;
+let currentStudent = null;
+let sortState = { key: 'name', dir: 1 };
+
+// ---------- login screen wiring ----------
+const roleButtons = document.querySelectorAll('.role-toggle button');
+roleButtons.forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    roleButtons.forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    const role = btn.dataset.role;
+    document.getElementById('studentLoginFields').classList.toggle('hidden', role!=='student');
+    document.getElementById('adminLoginFields').classList.toggle('hidden', role!=='admin');
+    document.getElementById('loginError').textContent = '';
+  });
+});
+
+function statCgpaCount(){
+  const withCgpa = STUDENTS.filter(s=>typeof s.cgpa === 'number');
+  const avg = withCgpa.reduce((a,s)=>a+s.cgpa,0)/withCgpa.length;
+  return { count: STUDENTS.length, avg: avg.toFixed(2), zeroBacklog: STUDENTS.filter(s=>s.active_backlogs===0 && s.cgpa).length };
+}
+(function initLoginStats(){
+  const st = statCgpaCount();
+  document.getElementById('statCount1').textContent = st.count;
+  document.getElementById('statCount2').textContent = st.avg;
+  document.getElementById('statCount3').textContent = st.zeroBacklog;
+})();
+
+document.getElementById('loginBtn').addEventListener('click', ()=>{
+  const role = document.querySelector('.role-toggle button.active').dataset.role;
+  const errEl = document.getElementById('loginError');
+  errEl.textContent = '';
+
+  if(role === 'admin'){
+    const code = document.getElementById('adminPass').value.trim();
+    if(code !== ADMIN_CODE){ errEl.textContent = 'Incorrect access code.'; return; }
+    currentRole = 'admin';
+    enterApp();
+  } else {
+    const usn = document.getElementById('stuUsn').value.trim().toUpperCase();
+    const match = STUDENTS.find(
+      s => s.usn.toUpperCase() === usn
+  );
+
+  if(!match){
+    errEl.textContent = 'Invalid USN.';
+    return;
+  }
+    currentRole = 'student';
+    currentStudent = match;
+    enterApp();
+  }
+});
+
+document.getElementById('logoutBtn').addEventListener('click', ()=>{
+  currentRole = null; currentStudent = null;
+  document.getElementById('appScreen').classList.remove('active');
+  document.getElementById('loginScreen').style.display = 'grid';
+  document.getElementById('stuUsn').value=''; 
+  document.getElementById('adminPass').value='';
+});
+
+function enterApp(){
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('appScreen').classList.add('active');
+  document.getElementById('roleLabel').textContent = currentRole === 'admin' ? 'PLACEMENT CELL' : 'STUDENT';
+
+  if(currentRole === 'admin'){
+    document.getElementById('adminDash').style.display = 'block';
+    document.getElementById('profileView').classList.remove('active');
+    renderDashboardStats();
+    renderTable();
+  } else {
+    document.getElementById('adminDash').style.display = 'none';
+    showProfile(currentStudent, false);
+  }
+}
+
+// ---------- dashboard ----------
+function renderDashboardStats(){
+  const withCgpa = STUDENTS.filter(s=>typeof s.cgpa === 'number');
+  const avg = withCgpa.length ? (withCgpa.reduce((a,s)=>a+s.cgpa,0)/withCgpa.length) : 0;
+  const backlogs = STUDENTS.filter(s=>s.active_backlogs>0).length;
+  const top = withCgpa.reduce((m,s)=>s.cgpa>m?s.cgpa:m, 0);
+  document.getElementById('dTotal').textContent = STUDENTS.length;
+  document.getElementById('dAvgCgpa').textContent = avg.toFixed(2);
+  document.getElementById('dBacklogs').textContent = backlogs;
+  document.getElementById('dTopCgpa').textContent = top.toFixed(2);
+}
+
+function getFiltered(){
+  const q = document.getElementById('searchInput').value.trim().toLowerCase();
+  const backlogFilter = document.getElementById('filterBacklog').value;
+  let rows = STUDENTS.filter(s=>{
+    const matchesQ = !q || s.name.toLowerCase().includes(q) || s.usn.toLowerCase().includes(q);
+    const matchesB = backlogFilter==='all' || (backlogFilter==='ok' && s.active_backlogs===0) || (backlogFilter==='warn' && s.active_backlogs>0);
+    return matchesQ && matchesB;
+  });
+  rows.sort((a,b)=>{
+    let av = a[sortState.key], bv = b[sortState.key];
+    if(av==null) av = typeof bv === 'number' ? -1 : '';
+    if(bv==null) bv = typeof av === 'number' ? -1 : '';
+    if(typeof av === 'string') { av=av.toLowerCase(); bv=(bv||'').toLowerCase(); }
+    if(av < bv) return -1*sortState.dir;
+    if(av > bv) return 1*sortState.dir;
+    return 0;
+  });
+  return rows;
+}
+
+function renderTable(){
+  const rows = getFiltered();
+  const body = document.getElementById('tableBody');
+  if(rows.length === 0){
+    body.innerHTML = '<tr><td colspan="9"><div class="empty-state"><h3>No matching records</h3>Try a different search or filter.</div></td></tr>';
+    return;
+  }
+  body.innerHTML = rows.map(s=>`
+    <tr data-usn="${s.usn}">
+      <td>${s.name}</td>
+      <td class="mono">${s.usn}</td>
+      <td class="cgpa-tag">${s.cgpa ?? '&mdash;'}</td>
+      <td class="mono">${s.tenth_pct ?? '&mdash;'}</td>
+      <td class="mono">${s.twelfth_pct ?? '&mdash;'}</td>
+      <td>${s.active_backlogs>0 ? `<span class="badge warn">${s.active_backlogs} active</span>` : '<span class="badge ok">Clear</span>'}</td>
+      <td class="mono">${s.mobile ?? '&mdash;'}</td>
+      <td class="mono">${s.personal_email ?? '&mdash;'}</td>
+      <td class="mono">${s.college_email ?? '&mdash;'}</td>
+    </tr>
+  `).join('');
+  body.querySelectorAll('tr').forEach(tr=>{
+    tr.addEventListener('click', ()=>{
+      const s = STUDENTS.find(x=>x.usn===tr.dataset.usn);
+      showProfile(s, true);
+    });
+  });
+}
+
+document.getElementById('searchInput').addEventListener('input', renderTable);
+document.getElementById('filterBacklog').addEventListener('change', renderTable);
+document.querySelectorAll('th[data-sort]').forEach(th=>{
+  th.addEventListener('click', ()=>{
+    const key = th.dataset.sort;
+    sortState.dir = (sortState.key === key) ? sortState.dir*-1 : 1;
+    sortState.key = key;
+    renderTable();
+  });
+});
+
+// ---------- profile view (oscilloscope SGPA trend) ----------
+function scopeSvg(sems){
+  const w = 560, h = 180, pad = 24;
+  const vals = sems.map(v => v==null ? null : v);
+  const known = vals.filter(v=>v!=null);
+  const minV = known.length ? Math.min(...known, 7.5) : 6;
+  const maxV = known.length ? Math.max(...known, 9.5) : 10;
+  const xStep = (w - pad*2) / (sems.length - 1);
+  const toY = v => h - pad - ((v - minV)/(maxV-minV || 1)) * (h - pad*2);
+  let path = ''; let dots = '';
+  vals.forEach((v,i)=>{
+    if(v==null) return;
+    const x = pad + i*xStep, y = toY(v);
+    path += (path==='' ? 'M' : 'L') + x.toFixed(1) + ' ' + y.toFixed(1) + ' ';
+    dots += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3.5" fill="#3bd688"/><text x="${x.toFixed(1)}" y="${(y-10).toFixed(1)}" font-size="10" fill="#c9793f" text-anchor="middle" font-family="IBM Plex Mono, monospace">${v}</text>`;
+  });
+  let grid = '';
+  for(let i=0;i<=4;i++){ const y = pad + i*(h-pad*2)/4; grid += `<line x1="${pad}" y1="${y}" x2="${w-pad}" y2="${y}" stroke="#1f4a3a" stroke-width="1"/>`; }
+  const labels = ['SEM 1','SEM 2','SEM 3','SEM 4','SEM 5','SEM 6'];
+  let labelText = '';
+  sems.forEach((v,i)=>{ const x = pad + i*xStep; labelText += `<text x="${x.toFixed(1)}" y="${h-6}" font-size="9" fill="#7d9186" text-anchor="middle" font-family="IBM Plex Mono, monospace">${labels[i]}</text>`; });
+  return `<svg viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg">${grid}<path d="${path}" fill="none" stroke="#3bd688" stroke-width="2"/>${dots}${labelText}</svg>`;
+}
+
+function showProfile(s, cameFromAdmin){
+  document.getElementById('adminDash').style.display = 'none';
+  const view = document.getElementById('profileView');
+  view.classList.add('active');
+  const sems = [s.sem1,s.sem2,s.sem3,s.sem4,s.sem5,s.sem6];
+  view.innerHTML = `
+    ${cameFromAdmin ? '<button class="back-link" id="backBtn">&larr; Back to directory</button>' : ''}
+    <div class="profile-header">
+      <div>
+        <h1>${s.name}</h1>
+        <span class="usn">${s.usn} &middot; ${s.program}</span>
+      </div>
+      ${s.active_backlogs>0 ? `<span class="badge warn">${s.active_backlogs} active backlog(s)</span>` : '<span class="badge ok">No active backlog</span>'}
+    </div>
+    <div class="profile-grid">
+      <div class="card">
+        <h3>SGPA trend</h3>
+        <div class="scope-wrap">${scopeSvg(sems)}</div>
+      </div>
+      <div class="card">
+        <h3>Academic summary</h3>
+        <div class="kv"><span>Cumulative CGPA</span><span>${s.cgpa ?? '&mdash;'}</span></div>
+        <div class="kv"><span>10th percentage</span><span>${s.tenth_pct ?? '&mdash;'}</span></div>
+        <div class="kv"><span>12th percentage</span><span>${s.twelfth_pct ?? '&mdash;'}</span></div>
+        <div class="kv"><span>Current backlog</span><span>${s.backlog_current}</span></div>
+        <div class="kv"><span>Active backlogs</span><span>${s.active_backlogs}</span></div>
+      </div>
+      <div class="card">
+        <h3>Contact</h3>
+        <div class="kv"><span>Mobile</span><span>${s.mobile ?? '&mdash;'}</span></div>
+        <div class="kv"><span>Personal email</span><span>${s.personal_email ?? '&mdash;'}</span></div>
+        <div class="kv"><span>College email</span><span>${s.college_email ?? '&mdash;'}</span></div>
+      </div>
+      <div class="card">
+        <h3>Semester-wise SGPA</h3>
+        ${sems.map((v,i)=>`<div class="kv"><span>Sem ${i+1}</span><span>${v ?? '&mdash;'}</span></div>`).join('')}
+      </div>
+    </div>
+  `;
+  if(cameFromAdmin){
+    document.getElementById('backBtn').addEventListener('click', ()=>{
+      view.classList.remove('active');
+      document.getElementById('adminDash').style.display = 'block';
+    });
+  }
+}
+</script>
+</body>
+</html>
