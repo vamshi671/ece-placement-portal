@@ -19,7 +19,15 @@ def _normalize_database_url(raw_url: str) -> str:
     return url
 
 
-DATABASE_URL = _normalize_database_url(os.getenv("DATABASE_URL", "sqlite:///./ece_placement.db"))
+_raw_database_url = os.getenv("DATABASE_URL")
+
+if not _raw_database_url:
+    raise RuntimeError(
+        "DATABASE_URL is not set. This app now requires a Postgres connection string "
+        "(e.g. from Neon) — set DATABASE_URL in your environment before starting the app."
+    )
+
+DATABASE_URL = _normalize_database_url(_raw_database_url)
 
 connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
 
