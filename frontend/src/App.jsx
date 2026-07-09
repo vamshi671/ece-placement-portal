@@ -63,7 +63,36 @@ function buildHeaders(token, extra = {}) {
 }
 
 function formatValue(value) {
-  return value === null || value === undefined || value === "" ? "-" : value;
+  if (value === null || value === undefined || value === "") {
+    return "-";
+  }
+
+  return value;
+}
+
+function formatPercentage(value) {
+  if (value === null || value === undefined || value === "") {
+    return "-";
+  }
+
+  const num = Number(value);
+
+  if (Number.isNaN(num)) {
+    return "-";
+  }
+
+  return num.toLocaleString(undefined, {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  });
+}
+
+function formatCGPA(value) {
+  if (value === null || value === undefined || value === "") {
+    return "-";
+  }
+
+  return Number(value).toFixed(2);
 }
 
 function formatDate(date) {
@@ -1898,20 +1927,7 @@ export default function App() {
                     >
                       Add Student
                     </button>
-                    <button
-                      type="button"
-                      className="toolbar-btn"
-                      onClick={() => fileInputRef.current?.click()}
-                    >
-                      Import Excel
-                    </button>
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept=".xlsx,.xlsm,.xltx,.xltm"
-                      className="hidden"
-                      onChange={handleImport}
-                    />
+                    
                     
                   </div>
 
@@ -1959,13 +1975,13 @@ export default function App() {
                               <td>{student.name}</td>
                               <td className="mono">{student.usn}</td>
                               <td className="cgpa-tag">
-                                {formatValue(student.cgpa)}
+                                {formatCGPA(student.cgpa)}
                               </td>
                               <td className="mono">
-                                {formatValue(student.tenth_pct)}
+                                {formatPercentage(student.tenth_pct)}
                               </td>
                               <td className="mono">
-                                {formatValue(student.twelfth_pct)}
+                                {formatPercentage(student.twelfth_pct)}
                               </td>
                               <td>
                                 <div className="placement-cell">
@@ -2103,15 +2119,15 @@ export default function App() {
                       <h3>Academic summary</h3>
                       <div className="kv">
                         <span>Cumulative CGPA</span>
-                        <span>{formatValue(profile.cgpa)}</span>
+                        <span>{formatCGPA(profile.cgpa)}</span>
                       </div>
                       <div className="kv">
                         <span>10th percentage</span>
-                        <span>{formatValue(profile.tenth_pct)}</span>
+                        <span>{formatPercentage(profile.tenth_pct)}</span>
                       </div>
                       <div className="kv">
                         <span>12th percentage</span>
-                        <span>{formatValue(profile.twelfth_pct)}</span>
+                        <span>{formatPercentage(profile.twelfth_pct)}</span>
                       </div>
                       <div className="kv">
                         <span>Placement status</span>
@@ -2148,7 +2164,7 @@ export default function App() {
                       {SEMESTER_FIELDS.map((field, index) => (
                         <div className="kv" key={field}>
                           <span>Sem {index + 1}</span>
-                          <span>{formatValue(profile[field])}</span>
+                          <span>{formatCGPA(profile[field])}</span>
                         </div>
                       ))}
                     </div>

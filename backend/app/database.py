@@ -10,29 +10,53 @@ load_env_file()
 
 def _normalize_database_url(raw_url: str) -> str:
     url = raw_url.strip()
+
     if url.startswith("postgresql+psycopg2://"):
-        return url.replace("postgresql+psycopg2://", "postgresql+psycopg://", 1)
+        return url.replace(
+            "postgresql+psycopg2://",
+            "postgresql+psycopg://",
+            1,
+        )
+
     if url.startswith("postgresql://"):
-        return url.replace("postgresql://", "postgresql+psycopg://", 1)
+        return url.replace(
+            "postgresql://",
+            "postgresql+psycopg://",
+            1,
+        )
+
     if url.startswith("postgres://"):
-        return url.replace("postgres://", "postgresql+psycopg://", 1)
+        return url.replace(
+            "postgres://",
+            "postgresql+psycopg://",
+            1,
+        )
+
     return url
 
 
-_raw_database_url = os.getenv("DATABASE_URL")
+DATABASE_URL = os.getenv("DATABASE_URL")
 
-if not _raw_database_url:
+if not DATABASE_URL:
     raise RuntimeError(
-        "DATABASE_URL is not set. This app now requires a Postgres connection string "
-        "(e.g. from Neon) — set DATABASE_URL in your environment before starting the app."
+        "DATABASE_URL is not configured. Please configure your Neon PostgreSQL connection."
     )
 
-DATABASE_URL = _normalize_database_url(_raw_database_url)
+DATABASE_URL = _normalize_database_url(DATABASE_URL)
 
-connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
+engine = create_engine(
+    DATABASE_URL,
+    pool_pre_ping=True,
+    pool_recycle=300,
+    future=True,
+)
 
-engine = create_engine(DATABASE_URL, future=True, connect_args=connect_args)
-SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, future=True)
+SessionLocal = sessionmaker(
+    bind=engine,
+    autoflush=False,
+    autocommit=False,
+    future=True,
+)
 
 
 class Base(DeclarativeBase):

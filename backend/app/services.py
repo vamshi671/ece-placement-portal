@@ -6,7 +6,7 @@ from datetime import datetime, time, timedelta
 from pathlib import Path
 
 from openpyxl import Workbook, load_workbook
-from sqlalchemy import func, or_, select
+from sqlalchemy import func, or_, select, nulls_last
 from sqlalchemy.orm import Session
 
 from .models import ScheduleEntry, Student
@@ -132,6 +132,7 @@ def list_students(
     sort_dir: str = "asc",
 ):
     stmt = select(Student)
+
     if query:
         like = f"%{query.strip()}%"
         stmt = stmt.where(
@@ -141,17 +142,49 @@ def list_students(
                 Student.company_name.ilike(like),
             )
         )
+
     if backlog_filter == "ok":
         stmt = stmt.where(Student.active_backlogs == 0)
     elif backlog_filter == "warn":
         stmt = stmt.where(Student.active_backlogs > 0)
+
     if placement_filter == "placed":
         stmt = stmt.where(Student.placement_status.is_(True))
     elif placement_filter == "not-placed":
         stmt = stmt.where(Student.placement_status.is_(False))
 
     order_field = SORTABLE_FIELDS.get(sort_key, Student.name)
-    stmt = stmt.order_by(order_field.desc() if sort_dir == "desc" else order_field.asc(), Student.name.asc())
+
+    NUMERIC_FIELDS = {
+        "cgpa",
+        "tenth_pct",
+        "twelfth_pct",
+        "active_backlogs",
+    }
+
+    if sort_key in NUMERIC_FIELDS:
+        if sort_dir == "desc":
+            stmt = stmt.order_by(
+                nulls_last(order_field.desc()),
+                Student.name.asc(),
+            )
+        else:
+            stmt = stmt.order_by(
+                nulls_last(order_field.asc()),
+                Student.name.asc(),
+            )
+    else:
+        if sort_dir == "desc":
+            stmt = stmt.order_by(
+                order_field.desc(),
+                Student.name.asc(),
+            )
+        else:
+            stmt = stmt.order_by(
+                order_field.asc(),
+                Student.name.asc(),
+            )
+
     return db.execute(stmt).scalars().all()
 
 
@@ -269,6 +302,26 @@ def import_students_from_workbook(db: Session, file_bytes: bytes) -> ImportRespo
         "backlogs": "active_backlogs",
         "backlogcurrent": "backlog_current",
         "backlog": "backlog_current",
+        "personalemailid": "personal_email",
+        "collegeemailid": "college_email",
+        "10thpercentage": "tenth_pct",
+        "10thpct": "tenth_pct",
+        "10th": "tenth_pct",
+        "12thpercentage": "twelfth_pct",
+        "12thpct": "twelfth_pct",
+        "12th": "twelfth_pct",
+        "1stsemsgpa": "sem1",
+        "2ndsemsgpa": "sem2",
+        "3rdsemsgpa": "sem3",
+        "4thsemsgpa": "sem4",
+        "5thsemsgpa": "sem5",
+        "6thsemsgpa": "sem6",
+        "7thsemsgpa": "sem7",
+        "8thsemsgpa": "sem8",
+        "cummulativecgpa": "cgpa",
+        "currentbacklogsubjectsyesno": "backlog_current",
+        "currentbacklogsubjects": "backlog_current",
+        "numberofactivebacklogs": "active_backlogs",
     }
 
     for raw in rows[1:]:
