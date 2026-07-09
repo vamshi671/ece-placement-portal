@@ -44,11 +44,11 @@ def ensure_student_schema():
     if "sem8" not in columns:
         statements.append(text("ALTER TABLE students ADD COLUMN sem8 FLOAT"))
     if "is_placed" not in columns:
-        statements.append(text("ALTER TABLE students ADD COLUMN is_placed BOOLEAN DEFAULT 0"))
+        statements.append(text("ALTER TABLE students ADD COLUMN is_placed BOOLEAN DEFAULT FALSE"))
     if "placed_company" not in columns:
         statements.append(text("ALTER TABLE students ADD COLUMN placed_company VARCHAR(255)"))
     if "placement_status" not in columns:
-        statements.append(text("ALTER TABLE students ADD COLUMN placement_status BOOLEAN DEFAULT 0"))
+        statements.append(text("ALTER TABLE students ADD COLUMN placement_status BOOLEAN DEFAULT FALSE"))
     if "company_name" not in columns:
         statements.append(text("ALTER TABLE students ADD COLUMN company_name VARCHAR(255)"))
 
@@ -72,9 +72,9 @@ def ensure_schedule_schema():
     if "title" not in columns:
         statements.append(text("ALTER TABLE schedule_entries ADD COLUMN title VARCHAR(255)"))
     if "start_at" not in columns:
-        statements.append(text("ALTER TABLE schedule_entries ADD COLUMN start_at DATETIME"))
+        statements.append(text("ALTER TABLE schedule_entries ADD COLUMN start_at TIMESTAMP"))
     if "end_at" not in columns:
-        statements.append(text("ALTER TABLE schedule_entries ADD COLUMN end_at DATETIME"))
+        statements.append(text("ALTER TABLE schedule_entries ADD COLUMN end_at TIMESTAMP"))
     if "event_type" not in columns:
         statements.append(text("ALTER TABLE schedule_entries ADD COLUMN event_type VARCHAR(64) DEFAULT 'Placement Drive'"))
     if "color" not in columns:
