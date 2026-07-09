@@ -37,6 +37,8 @@ STUDENT_FIELDS = [
 
 def ensure_student_schema():
     inspector = inspect(engine)
+    is_postgres = engine.dialect.name == "postgresql"
+    bool_default = "false" if is_postgres else "0"
     columns = {column["name"] for column in inspector.get_columns("students")} if inspector.has_table("students") else set()
     statements = []
     if "sem7" not in columns:
@@ -44,37 +46,41 @@ def ensure_student_schema():
     if "sem8" not in columns:
         statements.append(text("ALTER TABLE students ADD COLUMN sem8 FLOAT"))
     if "is_placed" not in columns:
-        statements.append(text("ALTER TABLE students ADD COLUMN is_placed BOOLEAN DEFAULT FALSE"))
+        statements.append(text(f"ALTER TABLE students ADD COLUMN is_placed BOOLEAN DEFAULT {bool_default}"))
     if "placed_company" not in columns:
         statements.append(text("ALTER TABLE students ADD COLUMN placed_company VARCHAR(255)"))
     if "placement_status" not in columns:
-        statements.append(text("ALTER TABLE students ADD COLUMN placement_status BOOLEAN DEFAULT FALSE"))
+        statements.append(text(f"ALTER TABLE students ADD COLUMN placement_status BOOLEAN DEFAULT {bool_default}"))
     if "company_name" not in columns:
         statements.append(text("ALTER TABLE students ADD COLUMN company_name VARCHAR(255)"))
-
-    if not statements:
-        with engine.begin() as connection:
-            connection.execute(text("UPDATE students SET placement_status = COALESCE(placement_status, is_placed, 0)"))
-            connection.execute(text("UPDATE students SET company_name = COALESCE(company_name, placed_company)"))
-        return
 
     with engine.begin() as connection:
         for statement in statements:
             connection.execute(statement)
-        connection.execute(text("UPDATE students SET placement_status = COALESCE(placement_status, is_placed, 0)"))
+        if is_postgres:
+            connection.execute(text(
+                "UPDATE students SET placement_status = COALESCE(placement_status, is_placed, false)"
+            ))
+        else:
+            connection.execute(text(
+                "UPDATE students SET placement_status = COALESCE(placement_status, is_placed, 0)"
+            ))
         connection.execute(text("UPDATE students SET company_name = COALESCE(company_name, placed_company)"))
 
 
 def ensure_schedule_schema():
     inspector = inspect(engine)
-    columns = {column["name"] for column in inspector.get_columns("schedule_entries")} if inspector.has_table("schedule_entries") else set()
+    is_postgres = engine.dialect.name == "postgresql"
+    datetime_type = "TIMESTAMP" if is_postgres else "DATETIME"
+    had_table = inspector.has_table("schedule_entries")
+    columns = {column["name"] for column in inspector.get_columns("schedule_entries")} if had_table else set()
     statements = []
     if "title" not in columns:
         statements.append(text("ALTER TABLE schedule_entries ADD COLUMN title VARCHAR(255)"))
     if "start_at" not in columns:
-        statements.append(text("ALTER TABLE schedule_entries ADD COLUMN start_at TIMESTAMP"))
+        statements.append(text(f"ALTER TABLE schedule_entries ADD COLUMN start_at {datetime_type}"))
     if "end_at" not in columns:
-        statements.append(text("ALTER TABLE schedule_entries ADD COLUMN end_at TIMESTAMP"))
+        statements.append(text(f"ALTER TABLE schedule_entries ADD COLUMN end_at {datetime_type}"))
     if "event_type" not in columns:
         statements.append(text("ALTER TABLE schedule_entries ADD COLUMN event_type VARCHAR(64) DEFAULT 'Placement Drive'"))
     if "color" not in columns:
@@ -85,13 +91,25 @@ def ensure_schedule_schema():
     with engine.begin() as connection:
         for statement in statements:
             connection.execute(statement)
-        if inspector.has_table("schedule_entries"):
+        if had_table:
             connection.execute(text("UPDATE schedule_entries SET title = COALESCE(title, company_name, 'Placement Drive')"))
             connection.execute(text("UPDATE schedule_entries SET location = COALESCE(location, venue)"))
             connection.execute(text("UPDATE schedule_entries SET event_type = COALESCE(event_type, 'Placement Drive')"))
             connection.execute(text("UPDATE schedule_entries SET color = COALESCE(color, '#3bd688')"))
-            connection.execute(text("UPDATE schedule_entries SET start_at = COALESCE(start_at, drive_date || ' 09:00:00')"))
-            connection.execute(text("UPDATE schedule_entries SET end_at = COALESCE(end_at, drive_date || ' 10:00:00')"))
+            if is_postgres:
+                connection.execute(text(
+                    "UPDATE schedule_entries SET start_at = COALESCE(start_at, (drive_date + TIME '09:00:00'))"
+                ))
+                connection.execute(text(
+                    "UPDATE schedule_entries SET end_at = COALESCE(end_at, (drive_date + TIME '10:00:00'))"
+                ))
+            else:
+                connection.execute(text(
+                    "UPDATE schedule_entries SET start_at = COALESCE(start_at, drive_date || ' 09:00:00')"
+                ))
+                connection.execute(text(
+                    "UPDATE schedule_entries SET end_at = COALESCE(end_at, drive_date || ' 10:00:00')"
+                ))
 
 
 app = FastAPI(title="ECE Placement Portal API")
