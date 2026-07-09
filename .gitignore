@@ -1,0 +1,10 @@
+*.db
+*.db-journal
+backend/.env
+frontend/.env
+**/node_modules/
+frontend/dist/
+**/__pycache__/
+*.pyc
+**/.venv/
+.DS_Store
