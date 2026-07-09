@@ -1901,10 +1901,18 @@ export default function App() {
                     <button
                       type="button"
                       className="toolbar-btn"
-                      onClick={() => handleExport("csv")}
+                      onClick={() => fileInputRef.current?.click()}
                     >
-                      Export CSV
+                      Import Excel
                     </button>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept=".xlsx,.xlsm,.xltx,.xltm"
+                      className="hidden"
+                      onChange={handleImport}
+                    />
+                    
                   </div>
 
                   <div className="table-scroll">
