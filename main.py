@@ -98,7 +98,10 @@ app = FastAPI(title="ECE Placement Portal API")
 
 _allowed_origins = [
     origin.strip()
-    for origin in os.getenv("ALLOWED_ORIGINS", "http://127.0.0.1:5173,http://localhost:5173").split(",")
+    for origin in os.getenv(
+        "ALLOWED_ORIGINS",
+        "http://localhost:5173,http://127.0.0.1:5173,https://ece-placement-portal.vercel.app",
+    ).split(",")
     if origin.strip()
 ]
 
@@ -140,6 +143,7 @@ def health_check():
 @app.get("/portal/stats", response_model=StatsResponse)
 def portal_stats(db: Session = Depends(get_db)):
     return get_stats(db)
+
 
 
 @app.get("/schedule", response_model=list[ScheduleOut])
